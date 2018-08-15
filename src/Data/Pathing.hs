@@ -17,12 +17,12 @@ module Data.Pathing
   , jpsPath
   ) where
 
-import Data.Tuple (swap)
-import qualified Data.PriorityQueue.FingerTree as PQ
-import Data.PriorityQueue.FingerTree (PQueue)
-import Data.Maybe (catMaybes, isJust)
-import Data.Map (Map)
+import           Data.Map (Map)
 import qualified Data.Map as Map
+import           Data.Maybe (catMaybes, isJust)
+import           Data.PriorityQueue.FingerTree (PQueue)
+import qualified Data.PriorityQueue.FingerTree as PQ
+import           Data.Tuple (swap)
 
 type Point = (Int,Int)
 type IsOpen = Point -> Bool

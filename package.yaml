@@ -28,4 +28,6 @@ dependencies:
 
 library:
   source-dirs: src
+  other-modules: Data.Pathing
+
 
