@@ -1,4 +1,7 @@
-{-# OPTIONS_GHC -Wall #-}
+{-# LANGUAGE BangPatterns    #-}
+{-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wall        #-}
 
 module Data.PathGrid
   ( JumpGrid ()
@@ -9,10 +12,11 @@ module Data.PathGrid
   , isTileOpen
   ) where
 
-import qualified Data.Pathing        as P
-import qualified Data.Vector.Unboxed as V
+import           Control.Lens
+import qualified Data.Pathing as P
 import           Data.Pathing (Point, Direction(North, South, East, West))
-import           Data.Vector.Unboxed (Vector)
+import           Data.Vector (Vector)
+import qualified Data.Vector as V
 import           Data.Word (Word16)
 
 {-
@@ -20,12 +24,25 @@ import           Data.Word (Word16)
 If you want a map larger than 65536x65536 you have a problem.
 A value of 0 means there is no jump from that point.
 -}
-type Jumps =
-    ( Word16 -- North jump distance
-    , Word16 -- East  jump distance
-    , Word16 -- South jump distance
-    , Word16 -- West  jump distance
-    )
+data Jumps = Jumps
+    { _nJumpDist :: {-# UNPACK #-} !Word16 -- North jump distance
+    , _eJumpDist :: {-# UNPACK #-} !Word16 -- East  jump distance
+    , _sJumpDist :: {-# UNPACK #-} !Word16 -- South jump distance
+    , _wJumpDist :: {-# UNPACK #-} !Word16 -- West  jump distance
+    }
+
+makeLenses ''Jumps
+
+
+
+instance Monoid Jumps where
+  mempty = Jumps 0 0 0 0
+  mappend (Jumps na ea sa wa)
+          (Jumps nb eb sb wb) =
+    Jumps (na + nb)
+          (ea + eb)
+          (sa + sb)
+          (wa + wb)
 
 data JumpGrid = JumpGrid
     !Int -- Width
@@ -43,7 +60,7 @@ data JumpChange = JumpChange
 make :: (Int,Int) -> JumpGrid
 make (w,h) = JumpGrid w h vec jumps
     where
-    jumps = V.replicate (w * h) (0,0,0,0)
+    jumps = V.replicate (w * h) mempty
     vec   = V.replicate (w * h) True
 
 closeArea :: Point -> Point -> JumpGrid -> JumpGrid
@@ -87,35 +104,19 @@ readJumpsSafe jg xy =
 readJumpsUnsafe :: JumpGrid -> Point -> Jumps
 readJumpsUnsafe (JumpGrid w _ _ jumps) (x,y) = V.unsafeIndex jumps (y * w + x)
 
-readNorthJumpSafe :: JumpGrid -> Point -> Maybe Point
-readNorthJumpSafe jg xy =
-    let (nj,_,_,_) = readJumpsSafe jg xy in
-    readTranslateJumpSafe jg P.North xy nj
-
-readSouthJumpSafe :: JumpGrid -> Point -> Maybe Point
-readSouthJumpSafe jg xy =
-    let (_,_,sj,_) = readJumpsSafe jg xy in
-    readTranslateJumpSafe jg P.South xy sj
-
-readEastJumpSafe :: JumpGrid -> Point -> Maybe Point
-readEastJumpSafe jg xy =
-    let (_,ej,_,_) = readJumpsSafe jg xy in
-    readTranslateJumpSafe jg P.East xy ej
-
-readWestJumpSafe :: JumpGrid -> Point -> Maybe Point
-readWestJumpSafe jg xy =
-    let (_,_,_,wj) = readJumpsSafe jg xy in
-    readTranslateJumpSafe jg P.West xy wj
+dirToLens :: Direction -> Lens' Jumps Word16
+dirToLens P.North = nJumpDist
+dirToLens P.South = sJumpDist
+dirToLens P.East  = eJumpDist
+dirToLens P.West  = wJumpDist
+dirToLens _ = error "dirToLens doesn't accept diagonal directions"
 
 readJumpSafe :: JumpGrid -> Direction -> Point -> Maybe Point
 readJumpSafe jg dir xy =
     if isDefinedOn jg xy then
-        case dir of
-            P.North -> readNorthJumpSafe jg xy
-            P.South -> readSouthJumpSafe jg xy
-            P.East  -> readEastJumpSafe  jg xy
-            P.West  -> readWestJumpSafe  jg xy
-            _     -> error "readJumpSafe doesn't accept diagonal directions"
+      readTranslateJumpSafe jg dir xy
+        . view (dirToLens dir)
+        $ readJumpsSafe jg xy
     else
         Nothing
 
@@ -125,13 +126,8 @@ isDefinedOn (JumpGrid w h _ _) (x,y) =
     x < w && y < h && x >= 0 && y >= 0
 
 setJumpChange :: Jumps -> JumpChange -> Jumps
-setJumpChange (nj,ej,sj,wj) (JumpChange dir dist _ _) =
-    case dir of
-        North -> (dist, ej, sj, wj)
-        South -> (nj, ej, dist, wj)
-        East  -> (nj, dist, sj, wj)
-        West  -> (nj, ej, sj, dist)
-        other -> error $ "setJumpChange received a bad Direction: " ++ show other
+setJumpChange jumps (JumpChange dir dist _ _) =
+  jumps & dirToLens dir .~ dist
 
 incorporateJumpChanges :: JumpGrid -> [JumpChange] -> V.Vector Jumps
 incorporateJumpChanges (JumpGrid w _ _ jumps) =
