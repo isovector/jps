@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - containers
 - vector
+- fingertree
 
 library:
   source-dirs: src

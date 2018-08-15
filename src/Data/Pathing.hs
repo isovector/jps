@@ -17,9 +17,10 @@ module Data.Pathing
   , jpsPath
   ) where
 
+import Data.Tuple (swap)
+import qualified Data.PriorityQueue.FingerTree as PQ
+import Data.PriorityQueue.FingerTree (PQueue)
 import Data.Maybe (catMaybes, isJust)
-import Data.PQ (PQ)
-import qualified Data.PQ as PQ
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -113,6 +114,12 @@ rotate180 dir = case dir of
     Southeast -> Northwest
     Northwest -> Southeast
     Southwest -> Northeast
+
+push :: Ord a => PQueue a a -> a -> PQueue a a
+push pq a = PQ.insert a a pq
+
+pop :: Ord a => PQueue a a -> Maybe (PQueue a a, a)
+pop = fmap swap . PQ.minView
 
 translate :: Int -> Direction -> Point -> Point
 translate n dir (x,y) = case dir of
@@ -293,7 +300,7 @@ instance Ord Node where
             _         -> False
 
 jpsPath :: IsOpen -> JumpGetter -> Point -> Point -> Maybe [Point]
-jpsPath isOpen jg start goal = runJPS isOpen jg (PQ.singleton startPoint) Map.empty start goal
+jpsPath isOpen jg start goal = runJPS isOpen jg (PQ.singleton startPoint startPoint) Map.empty start goal
     where
     dist = getDist start goal
     startPoint = Node 0 dist dist North start
@@ -301,9 +308,9 @@ jpsPath isOpen jg start goal = runJPS isOpen jg (PQ.singleton startPoint) Map.em
 getDist :: Point -> Point -> Double
 getDist (x1,y1) (x2,y2) = sqrt $ fromIntegral $ (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)
 
-runJPS :: IsOpen -> JumpGetter -> PQ Node -> Map Point Point -> Point -> Point -> Maybe [Point]
+runJPS :: IsOpen -> JumpGetter -> PQueue Node Node -> Map Point Point -> Point -> Point -> Maybe [Point]
 runJPS isOpen jg open closed start goal =
-    case PQ.pop open of
+    case pop open of
         Nothing -> Nothing
         Just (open2, node) ->
             if _xy node == goal then
@@ -316,7 +323,7 @@ runJPS isOpen jg open closed start goal =
                                 g = _g node + adjDist
                                 h = getDist xy goal
                                 f = g + h in
-                            PQ.push pq $ Node {
+                            push pq $ Node {
                                 _g = g,
                                 _h = h,
                                 _f = f,
