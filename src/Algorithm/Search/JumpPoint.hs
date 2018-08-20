@@ -1,7 +1,7 @@
-{-# LANGUAGE BangPatterns  #-}
-{-# LANGUAGE RankNTypes    #-}
+{-# LANGUAGE BangPatterns    #-}
+{-# LANGUAGE CPP             #-}
+{-# LANGUAGE RankNTypes      #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# OPTIONS_GHC -Wall    #-}
 
 module Algorithm.Search.JumpPoint
   ( JumpGrid ()
@@ -13,10 +13,12 @@ module Algorithm.Search.JumpPoint
   , isTileOpen
   ) where
 
-import           Algorithm.Search.JumpPoint.Pathing (Point, Direction(North, South, East, West))
+import           Algorithm.Search.JumpPoint.Pathing (Point, Direction(..))
 import qualified Algorithm.Search.JumpPoint.Pathing as P
 import           Control.Lens
+#if !(MIN_VERSION_base(4,11,1))
 import           Data.Semigroup
+#endif
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Data.Word (Word16)
