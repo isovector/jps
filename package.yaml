@@ -4,15 +4,15 @@ github:              "isovector/jps"
 license:             BSD3
 author:              "Zachary Kamerling"
 maintainer:          "Sandy Maguire <sandy@sandymaguire.me>"
-copyright:           "2018 Author name here"
+copyright:           "2018 Zachary Kamerling"
 
 extra-source-files:
 - README.md
 - ChangeLog.md
 
 # Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
+synopsis:            Short description of your package
+category:            Algorithm
 
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
@@ -28,6 +28,5 @@ dependencies:
 
 library:
   source-dirs: src
-  other-modules: Data.Pathing
-
+  other-modules: Algorithm.Search.JumpPoint.Pathing
 

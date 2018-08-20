@@ -3,8 +3,9 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wall    #-}
 
-module Data.PathGrid
+module Algorithm.Search.JumpPoint
   ( JumpGrid ()
+  , Point
   , make
   , closeArea
   , openArea
@@ -12,9 +13,9 @@ module Data.PathGrid
   , isTileOpen
   ) where
 
+import           Algorithm.Search.JumpPoint.Pathing (Point, Direction(North, South, East, West))
+import qualified Algorithm.Search.JumpPoint.Pathing as P
 import           Control.Lens
-import           Data.Pathing (Point, Direction(North, South, East, West))
-import qualified Data.Pathing as P
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Data.Word (Word16)
@@ -42,6 +43,9 @@ instance Monoid Jumps where
         (sa + sb)
         (wa + wb)
 
+
+------------------------------------------------------------------------------
+-- | The pathfinding grid.
 data JumpGrid = JumpGrid
   { jgWidth  :: {-# UNPACK #-} !Int -- Width
   , jgHeight :: {-# UNPACK #-} !Int -- Height
@@ -54,28 +58,61 @@ data JumpChange = JumpChange
   !Word16
   !(Int, Int)
 
--- Creates a grid with all nodes open.
-make :: Int -> Int -> JumpGrid
+
+------------------------------------------------------------------------------
+-- | Creates a 'JumpGrid' with all nodes open.
+make
+    :: Int  -- ^ Grid width
+    -> Int  -- ^ Grid height
+    -> JumpGrid
 make w h = JumpGrid w h vec jumps
   where
   jumps = V.replicate (w * h) mempty
   vec   = V.replicate (w * h) True
 
-closeArea :: Point -> Point -> JumpGrid -> JumpGrid
+
+------------------------------------------------------------------------------
+-- | Close a square defined by two points on the 'JumpGrid'.
+closeArea
+    :: Point  -- ^ First point
+    -> Point  -- ^ Second point
+    -> JumpGrid
+    -> JumpGrid
 closeArea = changeArea False
 
-openArea :: Point -> Point -> JumpGrid -> JumpGrid
+
+------------------------------------------------------------------------------
+-- | Open a square defined by two points on the 'JumpGrid'.
+openArea
+    :: Point  -- ^ First point
+    -> Point  -- ^ Second point
+    -> JumpGrid
+    -> JumpGrid
 openArea = changeArea True
 
-findPath :: JumpGrid -> Point -> Point -> Maybe [Point]
+
+------------------------------------------------------------------------------
+-- | Attempt to pathfind over a 'JumpGrid'.
+findPath
+    :: JumpGrid  -- ^ Grid
+    -> Point     -- ^ Source location
+    -> Point     -- ^ Destination location
+    -> Maybe [Point]
 findPath jg start goal = P.jpsPath (isTileOpen jg) (readJumpSafe jg) start goal
 
-isTileOpen :: JumpGrid -> Point -> Bool
+
+------------------------------------------------------------------------------
+-- | Returns 'True' iff a point on the grid is open.
+isTileOpen
+    :: JumpGrid
+    -> Point
+    -> Bool
 isTileOpen jg xy =
   if isDefinedOn jg xy then
     V.unsafeIndex (jgTiles jg) $ indexOf jg xy
   else
     False
+
 
 readTranslateJumpSafe :: JumpGrid -> Direction -> Point -> Word16 -> Maybe Point
 readTranslateJumpSafe jg dir xy n =

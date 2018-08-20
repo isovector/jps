@@ -1,4 +1,4 @@
-module Data.Pathing
+module Algorithm.Search.JumpPoint.Pathing
   ( rotate45C
   , rotate45CC
   , rotate90C
@@ -24,7 +24,9 @@ import           Data.PriorityQueue.FingerTree (PQueue)
 import qualified Data.PriorityQueue.FingerTree as PQ
 import           Data.Tuple (swap)
 
-type Point = (Int,Int)
+-- | A point on the grid.
+type Point = (Int, Int)
+
 type IsOpen = Point -> Bool
 
 data Direction
