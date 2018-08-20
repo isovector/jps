@@ -11,7 +11,7 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-synopsis:            Short description of your package
+synopsis:            Jump point search for Haskell
 category:            Algorithm
 
 # To avoid duplicated efforts in documentation and dealing with the
