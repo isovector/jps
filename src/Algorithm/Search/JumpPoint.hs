@@ -16,6 +16,7 @@ module Algorithm.Search.JumpPoint
 import           Algorithm.Search.JumpPoint.Pathing (Point, Direction(North, South, East, West))
 import qualified Algorithm.Search.JumpPoint.Pathing as P
 import           Control.Lens
+import           Data.Semigroup
 import           Data.Vector (Vector)
 import qualified Data.Vector as V
 import           Data.Word (Word16)
@@ -34,14 +35,17 @@ data Jumps = Jumps
 
 makeLenses ''Jumps
 
+instance Semigroup Jumps where
+  Jumps na ea sa wa <> Jumps nb eb sb wb =
+    Jumps (na + nb)
+          (ea + eb)
+          (sa + sb)
+          (wa + wb)
+
+
 instance Monoid Jumps where
   mempty = Jumps 0 0 0 0
-  mappend (Jumps na ea sa wa)
-          (Jumps nb eb sb wb) =
-    Jumps (na + nb)
-        (ea + eb)
-        (sa + sb)
-        (wa + wb)
+  mappend = (<>)
 
 
 ------------------------------------------------------------------------------
